@@ -5,7 +5,7 @@ module Awssh
           verbose: false,
           config: '~/.awssh',
           multi: false,
-          test: true,
+          test: false,
       }
       @config = {
           multi: 'csshX',

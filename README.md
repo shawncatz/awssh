@@ -41,6 +41,18 @@ Options:
     -i, --init                       initialize config
 ```
 
+## Shell Alias
+
+To get around using multiple RVM's and still have access to awssh command
+
+alias awssh='rvm <rvm version> do awssh'
+
+When you install awssh into your default ruby, then change to a project ruby,
+the awssh gem is not longer available. This allows you to use the awssh gem
+from ruby. Just specify the default rvm version in <rvm verison> above.
+
+alias awssh='rvm 2.1.2 do awssh'
+
 ## Contributing
 
 1. Fork it ( https://github.com/[my-github-username]/awssh/fork )
