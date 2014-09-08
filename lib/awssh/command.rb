@@ -73,6 +73,11 @@ module Awssh
         puts "- #{s}"
       end if @options[:verbose]
 
+      if @servers.count == 0
+        puts "no servers found"
+        exit 1
+      end
+
       if @servers.count > 1 && !@options[:multi]
         puts "more than one server found, and multi is false"
         puts "set the -m flag to connect to more than one matched server"
@@ -123,7 +128,7 @@ module Awssh
       if @options[:multi]
         command = "#{@config["multi"]} #{servers.map {|e| server_url(e) }.join(' ')}"
       else
-        command = "#{@config["single"]} #{server_url(e)}"
+        command = "#{@config["single"]} #{server_url(servers.first)}"
       end
       command
     end
