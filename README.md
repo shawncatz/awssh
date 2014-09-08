@@ -105,7 +105,8 @@ expires: 86400                 # cache expiration time (in seconds)
 
 ## Multi SSH
 
-`csshX` is available on Mac OSX through brew
+`csshX` is available on Mac OSX through brew.
+
 `cssh` is available on linux, through apt or yum.
 
 If there are other programs like this, please let me know.
@@ -115,7 +116,7 @@ for more advanced usage.
 
 ## Caching
 
-Maintains a simple cache with expiration (default: 1 day)
+Maintains a simple cache with expiration (default: 1 day).
 The cache just contains the list of servers' names.
 You can disable the cache by setting the cache value to false in the config file.
 
@@ -123,13 +124,13 @@ You can disable the cache by setting the cache value to false in the config file
 
 To get around using multiple RVM's and still have access to awssh command
 
-alias awssh='rvm <rvm version> do awssh'
+`alias awssh='rvm <rvm version> do awssh'`
 
 When you install awssh into your default ruby, then change to a project ruby,
 the awssh gem is no longer available. This allows you to use the awssh gem
 from ruby. Just specify the default rvm version in <rvm verison> above.
 
-alias awssh='rvm 2.1.2 do awssh'
+`alias awssh='rvm 2.1.2 do awssh'`
 
 ## Contributing
 
