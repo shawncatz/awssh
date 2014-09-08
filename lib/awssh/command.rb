@@ -17,6 +17,9 @@ module Awssh
           domain: 'example.com'
       }.stringify_keys
 
+      @config_file = File.expand_path(@options[:config])
+      @config.merge!(YAML.load_file(@config_file)) if File.exists?(@config_file)
+
       OptionParser.new do |opts|
         opts.banner = "Usage: awssh [options] [search terms]"
 
@@ -52,11 +55,12 @@ module Awssh
           puts "created config file: #{path}"
           exit 0
         end
+        opts.on('-u', '--user', 'override user setting') do |u|
+          @config['user'] = u
+        end
       end.parse!(argv)
 
       @search = argv
-      @config_file = File.expand_path(@options[:config])
-      @config.merge!(YAML.load_file(@config_file)) if File.exists?(@config_file)
 
       if @options[:verbose]
         p @search
