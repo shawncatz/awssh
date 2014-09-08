@@ -13,13 +13,17 @@ Generally, you will install this directly:
 
     $ gem install awssh
 
-or, add this line to your application's Gemfile:
+Initialize the config file:
 
-    gem 'awssh'
+    $ awssh -i
 
-And then execute:
-
-    $ bundle
+Edit the config file and add the AWS key and secret.
+```
+...
+key: AWS ACCESS KEY ID         # AWS key
+secret: AWS SECRET ACCESS KEY  # AWS secret
+...
+```
 
 ## Requirement
 
