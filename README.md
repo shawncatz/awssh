@@ -64,6 +64,16 @@ cache: "~/.awssh.cache"        # cache file location
 expires: 86400                 # cache expiration time (in seconds)
 ```
 
+## Multi SSH
+
+`csshX` is available on Mac OSX through brew
+`cssh` is available on linux, through apt or yum.
+
+If there are other programs like this, please let me know.
+
+Eventually, I'd like to support the programs with templated commands, to allow
+for more advanced usage.
+
 ## Caching
 
 Maintains a simple cache with expiration (default: 1 day)
