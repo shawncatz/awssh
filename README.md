@@ -83,7 +83,7 @@ Connect to all staging servers
 awssh -m staging #=> web1.staging, app1.staging
 ```
 
-Connect to all production servers, except app3
+Connect to all production servers, except app3.
 The hat `^` negates a match.
 ```
 awssh -m production ^app3 #=> web1.production, web2.production, app1.production, app2.production
