@@ -21,6 +21,18 @@ And then execute:
 
     $ bundle
 
+## Requirement
+
+The only requirement of the tool is that the Name tag on the instance maps to the DNS record.
+Generally, `awssh` expects that if the name of the instance is `foo.bar`, then it can
+connect to the server by appending the domain name as `foo.bar.example.com`.
+
+If you unset the domain name in the config, it will not append it. As such, if your Name
+tag maps directly to the DNS name, it will work as well.
+
+In the future, I might add a templated way for handling hostnames, to allow for
+more customization in DNS lookup.
+
 ## Usage
 
 ```
