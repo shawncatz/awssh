@@ -48,7 +48,7 @@ module Awssh
         end
         opts.on('-i', '--init', 'initialize config') do |i|
           path = File.expand_path("~/.awssh")
-          File.open(path, "w+") {|f| f.write config.to_yaml}
+          File.open(path, "w+") { |f| f.write config.to_yaml }
           puts "created config file: #{path}"
           exit 0
         end
@@ -87,11 +87,8 @@ module Awssh
 
       @command = get_command(@servers)
 
-      if @options[:test]
-        puts "command: #{@command}"
-      else
-        exec @command
-      end
+      puts "running: #{@command}"
+      exec @command unless @options[:test]
     end
 
     private
@@ -126,7 +123,7 @@ module Awssh
 
     def get_command(servers)
       if @options[:multi]
-        command = "#{@config["multi"]} #{servers.map {|e| server_url(e) }.join(' ')}"
+        command = "#{@config["multi"]} #{servers.map { |e| server_url(e) }.join(' ')}"
       else
         command = "#{@config["single"]} #{server_url(servers.first)}"
       end
