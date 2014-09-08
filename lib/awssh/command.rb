@@ -6,6 +6,7 @@ module Awssh
           config: '~/.awssh',
           multi: false,
           test: false,
+          list: false,
       }
       @config = {
           multi: 'csshX',
@@ -14,7 +15,9 @@ module Awssh
           user: nil,
           key: 'AWS ACCESS KEY ID',
           secret: 'AWS SECRET ACCESS KEY',
-          domain: 'example.com'
+          domain: 'example.com',
+          cache: '~/.awssh.cache',
+          expires: 1.day
       }.stringify_keys
 
       @config_file = File.expand_path(@options[:config])
@@ -58,6 +61,14 @@ module Awssh
         opts.on('-u', '--user', 'override user setting') do |u|
           @config['user'] = u
         end
+        opts.on('-l', '--list', 'just list servers') do |l|
+          @options[:list] = true
+        end
+        opts.on('-U', '--update', 'just update the cache') do |u|
+          @options[:update] = true
+          get_servers
+          exit 0
+        end
       end.parse!(argv)
 
       @search = argv
@@ -70,22 +81,22 @@ module Awssh
     end
 
     def connect
-      @servers = get_servers
+      @servers = find_servers
 
-      puts "found: #{@servers.count}" if @options[:verbose]
-      @servers.each do |s|
-        puts "- #{s}"
-      end if @options[:verbose]
+      if @options[:verbose] || @options[:list]
+        print_list
+      end
+      return if @options[:list]
 
-      if @servers.count == 0
-        puts "no servers found"
+      if @servers.count > 1 && !@options[:multi]
+        print_list
+        puts "more than one server found, and multi is false"
+        puts "set the -m flag to connect to more than one matched server"
         exit 1
       end
 
-      if @servers.count > 1 && !@options[:multi]
-        puts "more than one server found, and multi is false"
-        puts "set the -m flag to connect to more than one matched server"
-        puts "servers: #{@servers.join(',')}" unless @options[:verbose]
+      if @servers.count == 0
+        puts "no servers found"
         exit 1
       end
 
@@ -97,31 +108,62 @@ module Awssh
 
     private
 
-    def get_servers
-      @fog = Fog::Compute.new(provider: 'AWS', aws_access_key_id: @config['key'], aws_secret_access_key: @config['secret'], region: @config["region"])
-      list = @fog.servers.all
+    def print_list
+      puts "found: #{@servers.count}"
+      @servers.each do |s|
+        puts "- #{s}"
+      end
+    end
 
-      puts "total servers: #{list.count}" if @options[:verbose]
-
+    def find_servers
       servers = []
-      list.each do |s|
-        n = s.tags['Name']
-        if n
-          fail = false
-          @search.each do |v|
-            if v =~ /^\^/
-              fail = true if n =~ /#{v.gsub(/^\^/, '')}/
-            else
-              fail = true unless n =~ /#{v}/
+      get_servers.each do |n|
+        fail = false
+        @search.each do |v|
+          if v =~ /^\^/
+            fail = true if n =~ /#{v.gsub(/^\^/, '')}/
+          else
+            fail = true unless n =~ /#{v}/
+          end
+        end
+        next if fail
+        servers << n
+      end
+      servers
+    end
+
+    def get_servers
+      list = get_cache do
+        server_names
+      end
+      puts "total servers: #{list.count}" if @options[:verbose]
+      list.sort
+    end
+
+    def get_cache
+      if @config['cache']
+        file = File.expand_path(@config['cache'])
+        if File.exists?(file)
+          unless @options[:update]
+            if Time.now - File.mtime(file) < @config['expires']
+              return YAML.load_file(file)
             end
           end
-          next if fail
-          servers << n
-        else
-          puts "server #{s.id} does not have a name"
         end
+        puts "updating cache ..."
+        list = yield
+        File.open(file, "w+") { |f| f.write list.to_yaml }
+        return list
       end
-      servers.sort
+      list = yield
+      return list
+    end
+
+    def server_names
+      puts "requesting servers ..."
+      @fog = Fog::Compute.new(provider: 'AWS', aws_access_key_id: @config['key'], aws_secret_access_key: @config['secret'], region: @config["region"])
+      list = @fog.servers.all
+      list.inject([]) { |a, e| a << e.tags['Name'] }
     end
 
     def get_command(servers)
