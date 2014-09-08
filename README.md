@@ -13,7 +13,7 @@ Generally, you will install this directly:
 
     $ gem install awssh
 
-Add this line to your application's Gemfile:
+or, add this line to your application's Gemfile:
 
     gem 'awssh'
 
