@@ -110,8 +110,7 @@ module Awssh
           fail = false
           @search.each do |v|
             if v =~ /^\^/
-              v.gsub!(/^\^/, '')
-              fail = true if n =~ /#{v}/
+              fail = true if n =~ /#{v.gsub(/^\^/, '')}/
             else
               fail = true unless n =~ /#{v}/
             end
