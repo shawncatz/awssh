@@ -61,6 +61,33 @@ Options:
     -u, --user                       override user setting
 
 ```
+## Examples
+Given a list of servers:
+```
+web1.staging
+app1.staging
+web1.production
+web2.production
+app1.production
+app2.production
+app3.production
+```
+
+Connect to web1.staging
+```
+awssh web1 staging #=> web1.staging
+```
+
+Connect to all staging servers
+```
+awssh -m staging #=> web1.staging, app1.staging
+```
+
+Connect to all production servers, except app3
+The hat `^` negates a match.
+```
+awssh -m production ^app3 #=> web1.production, web2.production, app1.production, app2.production
+```
 
 ## Config
 ```
