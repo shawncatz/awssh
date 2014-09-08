@@ -4,9 +4,14 @@ Hacky way to handle ssh to AWS servers
 
 - Searches for servers based on AWS tag Name.
 - Provides the ability to use single ssh and multiple ssh access.
-- Multiple can use cssh or csshX (configurable)
+- Use cssh or csshX (configurable) for mulit-server access
+- caches list of servers, to minimize calls to AWS (primarily for speed).
 
 ## Installation
+
+Generally, you will install this directly:
+
+    $ gem install awssh
 
 Add this line to your application's Gemfile:
 
@@ -15,10 +20,6 @@ Add this line to your application's Gemfile:
 And then execute:
 
     $ bundle
-
-Or install it yourself as:
-
-    $ gem install awssh
 
 ## Usage
 
@@ -30,16 +31,44 @@ Search Terms:
   positive check for each entry
     name =~ /term/
   negative check if the term starts with ^
-    name !~ /term/ if term[0] == "^"
+    name !~ /term/
 
 Options:
+    -V, --version                    print version
+    -i, --init                       initialize config
+
+    -l, --list                       just list servers
     -n, --test                       just output ssh command
     -v, --[no-]verbose               Run verbosely
-    -V, --version                    print version
-    -c, --config                     config file (default: ~/.awssh)
+
+    -U, --update                     just update the cache
+        --no-cache                   disable cache for this run
+
     -m, --[no-]multi                 connect to multiple servers
-    -i, --init                       initialize config
+    -c, --config                     override config file (default: ~/.awssh)
+    -u, --user                       override user setting
+
 ```
+
+## Config
+```
+---
+multi: csshX                   # multi ssh program: csshX or cssh
+single: ssh                    # ssh program, allows for common configs
+region: us-east-1              # ec2 region
+user:                          # username to ssh as
+key: AWS ACCESS KEY ID         # AWS key
+secret: AWS SECRET ACCESS KEY  # AWS secret
+domain: example.com            # append domain to server names
+cache: "~/.awssh.cache"        # cache file location
+expires: 86400                 # cache expiration time (in seconds)
+```
+
+## Caching
+
+Maintains a simple cache with expiration (default: 1 day)
+The cache just contains the list of servers' names.
+You can disable the cache by setting the cache value to false in the config file.
 
 ## Shell Alias
 
@@ -48,7 +77,7 @@ To get around using multiple RVM's and still have access to awssh command
 alias awssh='rvm <rvm version> do awssh'
 
 When you install awssh into your default ruby, then change to a project ruby,
-the awssh gem is not longer available. This allows you to use the awssh gem
+the awssh gem is no longer available. This allows you to use the awssh gem
 from ruby. Just specify the default rvm version in <rvm verison> above.
 
 alias awssh='rvm 2.1.2 do awssh'

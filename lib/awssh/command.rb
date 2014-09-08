@@ -21,7 +21,7 @@ module Awssh
       }.stringify_keys
 
       @config_file = File.expand_path(@options[:config])
-      @config.merge!(YAML.load_file(@config_file)) if File.exists?(@config_file)
+      @config.merge!(YAML.load_file(@config_file)||{}) if File.exists?(@config_file)
 
       OptionParser.new do |opts|
         opts.banner = "Usage: awssh [options] [search terms]"
@@ -32,42 +32,48 @@ module Awssh
         opts.separator '  positive check for each entry'
         opts.separator '    name =~ /term/'
         opts.separator '  negative check if the term starts with ^'
-        opts.separator '    name !~ /term/ if term[0] == "^"'
+        opts.separator '    name !~ /term/'
         opts.separator ''
         opts.separator 'Options:'
-
+        opts.on('-V', '--version', 'print version') do |v|
+          puts "awssh version: #{Awssh::Version::STRING}"
+          exit 0
+        end
+        opts.on('-i', '--init', 'initialize config') do |i|
+          path = File.expand_path("~/.awssh")
+          File.open(path, "w+") { |f| f.write @config.to_yaml }
+          puts "created config file: #{path}"
+          exit 0
+        end
+        opts.separator ''
+        opts.on('-l', '--list', 'just list servers') do |l|
+          @options[:list] = true
+        end
         opts.on('-n', '--test', 'just output ssh command') do |n|
           @options[:test] = n
         end
         opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
           @options[:verbose] = v
         end
-        opts.on('-V', '--version', 'print version') do |v|
-          puts "awssh version: #{Awssh::Version::STRING}"
-          exit 0
-        end
-        opts.on('-c', "--config", "config file (default: ~/.awssh)") do |c|
-          @options[:config] = c
-        end
-        opts.on('-m', '--[no-]multi', 'connect to multiple servers') do |m|
-          @options[:multi] = m
-        end
-        opts.on('-i', '--init', 'initialize config') do |i|
-          path = File.expand_path("~/.awssh")
-          File.open(path, "w+") { |f| f.write config.to_yaml }
-          puts "created config file: #{path}"
-          exit 0
-        end
-        opts.on('-u', '--user', 'override user setting') do |u|
-          @config['user'] = u
-        end
-        opts.on('-l', '--list', 'just list servers') do |l|
-          @options[:list] = true
-        end
+
+        opts.separator ''
         opts.on('-U', '--update', 'just update the cache') do |u|
           @options[:update] = true
           get_servers
           exit 0
+        end
+        opts.on('--no-cache', 'disable cache for this run') do |u|
+          @config['cache'] = false
+        end
+        opts.separator ''
+        opts.on('-m', '--[no-]multi', 'connect to multiple servers') do |m|
+          @options[:multi] = m
+        end
+        opts.on('-c', "--config", "override config file (default: ~/.awssh)") do |c|
+          @options[:config] = c
+        end
+        opts.on('-u', '--user', 'override user setting') do |u|
+          @config['user'] = u
         end
       end.parse!(argv)
 
