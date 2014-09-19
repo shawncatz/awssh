@@ -72,7 +72,7 @@ module Awssh
         opts.on('-c', "--config", "override config file (default: ~/.awssh)") do |c|
           @options[:config] = c
         end
-        opts.on('-u', '--user', 'override user setting') do |u|
+        opts.on('-u', '--user USER', 'override user setting') do |u|
           @config['user'] = u
         end
       end.parse!(argv)
