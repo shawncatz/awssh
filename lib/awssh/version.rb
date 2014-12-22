@@ -2,7 +2,7 @@ module Awssh
   module Version
     MAJOR = 0
     MINOR = 1
-    TINY  = 9
+    TINY  = 10
     TAG   = nil
     LIST  = [MAJOR, MINOR, TINY, TAG].compact
     STRING = LIST.join('.')
