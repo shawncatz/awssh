@@ -168,8 +168,8 @@ module Awssh
     def server_names
       puts "requesting servers ..."
       @fog = Fog::Compute.new(provider: 'AWS', aws_access_key_id: @config['key'], aws_secret_access_key: @config['secret'], region: @config["region"])
-      list = @fog.servers.all
-      list.inject([]) { |a, e| a << e.tags['Name'] }
+      list = @fog.servers.all({'instance-state-name' => 'running'})
+      list.inject([]) { |a, e| a << e.tags['Name'] || e.id }
     end
 
     def get_command(servers)
