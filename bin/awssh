@@ -5,4 +5,4 @@ require 'optparse'
 require 'active_support/all'
 require 'awssh'
 
-Awssh::Command.new(ARGV).connect
+Awssh::Command.new(ARGV).run

@@ -1,3 +1,4 @@
+require 'pp'
 module Awssh
   class Command
     def initialize(argv)
@@ -11,17 +12,15 @@ module Awssh
       @config = {
           multi: 'csshX',
           single: 'ssh',
-          region: 'us-east-1',
           user: nil,
-          key: 'AWS ACCESS KEY ID',
-          secret: 'AWS SECRET ACCESS KEY',
-          domain: 'example.com',
+          use_names: false,
           cache: '~/.awssh.cache',
           expires: 1.day
       }.stringify_keys
 
       @config_file = File.expand_path(@options[:config])
-      @config.merge!(YAML.load_file(@config_file)||{}) if File.exists?(@config_file)
+      Awssh::Config.load(@config_file)
+      @config = Awssh::Config.data
 
       OptionParser.new do |opts|
         opts.banner = "Usage: awssh [options] [search terms]"
@@ -35,14 +34,22 @@ module Awssh
         opts.separator '    name !~ /term/'
         opts.separator ''
         opts.separator 'Options:'
+        opts.on('-c', "--config", "override config file (default: ~/.awssh)") do |c|
+          @options[:config] = c
+        end
         opts.on('-V', '--version', 'print version') do |v|
           puts "awssh version: #{Awssh::Version::STRING}"
           exit 0
         end
         opts.on('-i', '--init', 'initialize config') do |i|
-          path = File.expand_path("~/.awssh")
-          File.open(path, "w+") { |f| f.write @config.to_yaml }
-          puts "created config file: #{path}"
+          path = File.expand_path(@options[:config])
+          puts "creating config file: #{path}"
+          if File.exists?(path)
+            backup = "#{path}.#{Time.now.to_i}"
+            puts "moving previous config to #{backup}"
+            FileUtils.mv(path, backup)
+          end
+          File.open(path, "w+") { |f| f.write Awssh::Config::DEFAULT }
           exit 0
         end
         opts.separator ''
@@ -59,134 +66,104 @@ module Awssh
         opts.separator ''
         opts.on('-U', '--update', 'just update the cache') do |u|
           @options[:update] = true
-          get_servers
-          exit 0
         end
         opts.on('--no-cache', 'disable cache for this run') do |u|
-          @config['cache'] = false
+          @config.cache = false
         end
         opts.separator ''
         opts.on('-m', '--[no-]multi', 'connect to multiple servers') do |m|
           @options[:multi] = m
         end
-        opts.on('-c', "--config", "override config file (default: ~/.awssh)") do |c|
-          @options[:config] = c
-        end
         opts.on('-u', '--user USER', 'override user setting') do |u|
-          @config['user'] = u
+          @config.user = u
         end
       end.parse!(argv)
 
+      @cloud = Awssh::Cloud.connect(@config.key, @config.secret, @config.region)
+      @cache = Awssh::Cache.new(@config.cache, @config.expires||1.day)
       @search = argv
 
+      if @options[:update]
+        cache(:servers, true) { @cloud.servers }
+        exit 0
+      end
+
       if @options[:verbose]
-        p @search
-        p @options
-        p @config
+        puts "options: #{@options.inspect}"
+        puts "config: #{@config.inspect}"
       end
     end
 
-    def connect
-      @servers = find_servers
+    def run
+      @servers = cache(:servers) { @cloud.servers }
+      search = Awssh::Search.new(@servers, @search)
+      list = search.filter
+      hosts = hosts(list)
 
-      if @options[:verbose] || @options[:list]
-        print_list
-      end
-      return if @options[:list]
-
-      if @servers.count > 1 && !@options[:multi]
-        print_list
-        puts "more than one server found, and multi is false"
-        puts "set the -m flag to connect to more than one matched server"
+      if hosts.count == 0
+        puts "no servers found."
         exit 1
       end
 
-      if @servers.count == 0
-        puts "no servers found"
+      multi_not_multi = (hosts.count > 1 && !@options[:multi])
+
+      if @options[:list] || @options[:verbose] || multi_not_multi
+        puts_hosts(hosts)
+      end
+      puts "#{hosts.count} servers found" if @options[:verbose]
+      exit 0 if @options[:list]
+      if multi_not_multi
+        puts "more than one server found and multi is false"
+        puts "use the -m flag to connect to multiple servers"
         exit 1
       end
 
-      @command = get_command(@servers)
-
-      puts "running: #{@command}"
-      exec @command unless @options[:test]
+      connect(hosts)
     end
 
-    private
-
-    def print_list
-      puts "found: #{@servers.count}"
-      @servers.each do |s|
-        puts "- #{s}"
+    def connect(hosts)
+      cmd = command(hosts)
+      if @options[:test] || @options[:verbose]
+        puts cmd
       end
+      exec(cmd) unless @options[:test]
     end
 
-    def find_servers
-      servers = []
-      get_servers.each do |n|
-        fail = false
-        @search.each do |v|
-          if v =~ /^\^/
-            fail = true if n =~ /#{v.gsub(/^\^/, '')}/
-          else
-            fail = true unless n =~ /#{v}/
-          end
-        end
-        next if fail
-        servers << n
-      end
-      servers
-    end
-
-    def get_servers
-      list = get_cache do
-        server_names
-      end
-      puts "total servers: #{list.count}" if @options[:verbose]
-      list.sort
-    end
-
-    def get_cache
-      if @config['cache']
-        file = File.expand_path(@config['cache'])
-        if File.exists?(file)
-          unless @options[:update]
-            if Time.now - File.mtime(file) < @config['expires']
-              return YAML.load_file(file)
-            end
-          end
-        end
-        puts "updating cache ..."
-        list = yield
-        File.open(file, "w+") { |f| f.write list.to_yaml }
-        return list
-      end
-      list = yield
-      return list
-    end
-
-    def server_names
-      puts "requesting servers ..."
-      @fog = Fog::Compute.new(provider: 'AWS', aws_access_key_id: @config['key'], aws_secret_access_key: @config['secret'], region: @config["region"])
-      list = @fog.servers.all({'instance-state-name' => 'running'})
-      list.inject([]) { |a, e| a << e.tags['Name'] || e.id }
-    end
-
-    def get_command(servers)
+    def command(hosts)
       if @options[:multi]
-        command = "#{@config["multi"]} #{servers.map { |e| server_url(e) }.join(' ')}"
+        command = "#{@config.multi} #{hosts.map { |e| host(e) }.join(' ')}"
       else
-        command = "#{@config["single"]} #{server_url(servers.first)}"
+        command = "#{@config.single} #{host(servers.first)}"
       end
       command
     end
 
-    def server_url(server)
+    def cache(key, force=!@config.cache, &block)
+      @cache.fetch(key, force, &block)
+    end
+
+    def hosts(list)
+      list.map do |l|
+        (id,_) = l.split('||')
+        @servers.to_a.detect {|e| e[:id] == id}
+      end.compact.sort_by {|e| e[:name]}
+    end
+
+    def host(host)
       out = []
-      out << "#{@config["user"]}@" if @config["user"]
-      out << server
-      out << ".#{@config["domain"]}" if @config["domain"]
+      out << "#{@config.user}@" if @config.user
+      if @config.use_names
+        out << [host[:name], @config.domain].compact.join('.')
+      else
+        out << host[:private]
+      end
       out.join('')
+    end
+
+    def puts_hosts(hosts)
+      hosts.each do |host|
+        puts "%10s   %-15s   %s" % [host[:id], host[:private], host[:name]]
+      end
     end
   end
 end
