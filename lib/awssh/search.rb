@@ -9,7 +9,6 @@ module Awssh
       list = @db
       @terms.each do |key, value, opts|
         regex = key == 'name' ? /\sname:[^\s]*#{value}[^\s]*/ : /\s#{key}:#{value}/
-        puts "regex: #{regex}"
         if opts[:inverse]
           found = list.grep(regex)
           list = list - found
