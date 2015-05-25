@@ -133,7 +133,7 @@ module Awssh
       if @options[:multi]
         command = "#{@config.multi} #{hosts.map { |e| host(e) }.join(' ')}"
       else
-        command = "#{@config.single} #{host(servers.first)}"
+        command = "#{@config.single} #{host(hosts.first)}"
       end
       command
     end
