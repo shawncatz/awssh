@@ -8,6 +8,7 @@ module Awssh
           multi: false,
           test: false,
           list: false,
+          identity: nil,
       }
       @config = {
           multi: 'csshX',
@@ -41,7 +42,10 @@ module Awssh
           puts "awssh version: #{Awssh::Version::STRING}"
           exit 0
         end
-        opts.on('-i', '--init', 'initialize config') do |i|
+        opts.on('-iIDENTITY', '--identity=IDENTITY', 'set ssh key') do |i|
+          @options[:identity] = i
+        end
+        opts.on('--init', 'initialize config') do |i|
           path = File.expand_path(@options[:config])
           puts "creating config file: #{path}"
           if File.exists?(path)
@@ -130,10 +134,11 @@ module Awssh
     end
 
     def command(hosts)
+      id = @options[:identity] ? "-i #{@options[:identity]}" : nil
       if @options[:multi]
-        command = "#{@config.multi} #{hosts.map { |e| host(e) }.join(' ')}"
+        command = "#{@config.multi} #{id} #{hosts.map { |e| host(e) }.join(' ')}"
       else
-        command = "#{@config.single} #{host(hosts.first)}"
+        command = "#{@config.single} #{id} #{host(hosts.first)}"
       end
       command
     end
