@@ -24,7 +24,7 @@ module Awssh
         a << {
           id: e.id,
           name: e.tags['Name'],
-          tags: e.tags.inject({}) {|h, e| (k,v) = e; h[k.downcase] = v.downcase; h},
+          tags: e.tags.inject({}) {|h, e| (k,v) = e; h[k.downcase] = (v ? v.downcase : nil); h},
           private: e.private_ip_address,
           public: e.public_ip_address,
         }
