@@ -23,8 +23,8 @@ module Awssh
       list.inject([]) do |a, e|
         a << {
           id: e.id,
-          name: e.tags['Name'],
-          tags: e.tags.inject({}) {|h, e| (k,v) = e; h[k.downcase] = (v ? v.downcase : nil); h},
+          name: e.tags['Name']||e.id,
+          tags: e.tags.inject({}) {|h, e| (k,v) = e; h[k.downcase] = (v ? v.downcase : ""); h},
           private: e.private_ip_address,
           public: e.public_ip_address,
         }
