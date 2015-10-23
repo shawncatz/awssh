@@ -1,4 +1,5 @@
 require 'ostruct'
+require 'yaml'
 
 module Awssh
   class Config

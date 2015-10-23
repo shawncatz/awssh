@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require 'fog'
+require 'aws-sdk'
 require 'optparse'
 require 'active_support/all'
 require 'awssh'

@@ -18,7 +18,8 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
 
-  spec.add_dependency 'fog', '~> 1.30.0'
+  # spec.add_dependency 'fog', '~> 1.30.0'
+  spec.add_dependency 'aws-sdk', '~> 2.1.31'
   spec.add_dependency 'dotenv', '~> 2.0.1'
   spec.add_dependency 'activesupport'
 

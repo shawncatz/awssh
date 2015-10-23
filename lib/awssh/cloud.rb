@@ -4,6 +4,7 @@ module Awssh
       def connect(key, secret, region)
         @instance = new(key, secret, region)
       end
+
       def instance
         raise "not connected?" unless @instance
         @instance
@@ -14,21 +15,28 @@ module Awssh
       @key = key
       @secret = secret
       @region = region
-      @fog = Fog::Compute.new(provider: 'AWS', aws_access_key_id: @key, aws_secret_access_key: @secret, region: @region)
     end
 
     def servers
       puts "requesting servers..."
-      list = @fog.servers.all({'instance-state-name' => 'running'})
-      list.inject([]) do |a, e|
+      Aws.config.update({region: @region, credentials: Aws::Credentials.new(@key, @secret)})
+      aws = Aws::EC2::Resource.new
+      aws.instances(filters:[{name: 'instance-state-name', values: ['running']}]).inject([]) do |a, instance|
+        tags = tags(instance)
         a << {
-          id: e.id,
-          name: e.tags['Name']||e.id,
-          tags: e.tags.inject({}) {|h, e| (k,v) = e; h[k.downcase] = (v ? v.downcase : ""); h},
-          private: e.private_ip_address,
-          public: e.public_ip_address,
+            id: instance.id,
+            name: tags['Name'] || instance.id,
+            tags: tags,
+            private: instance.private_ip_address,
+            public: instance.public_ip_address,
         }
       end
+    end
+
+    private
+
+    def tags(instance)
+      instance.tags.inject({}) {|h, e| h[e.key.downcase]=e.value.downcase; h}
     end
   end
 end
