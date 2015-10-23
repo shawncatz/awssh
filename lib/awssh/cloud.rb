@@ -25,7 +25,7 @@ module Awssh
         tags = tags(instance)
         a << {
             id: instance.id,
-            name: tags['Name'] || instance.id,
+            name: tags['name'] || instance.id,
             tags: tags,
             private: instance.private_ip_address,
             public: instance.public_ip_address,
