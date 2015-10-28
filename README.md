@@ -17,9 +17,10 @@ Initialize the config file:
 
     $ awssh -i
 
-Edit the config file and add the AWS key and secret.
+Edit the config file and add the AWS region, key, and secret.
 ```
 ...
+region: us-east-1              # AWS region
 key: AWS ACCESS KEY ID         # AWS key
 secret: AWS SECRET ACCESS KEY  # AWS secret
 ...
@@ -27,12 +28,21 @@ secret: AWS SECRET ACCESS KEY  # AWS secret
 
 ## Requirement
 
-The only requirement of the tool is that the Name tag on the instance maps to the DNS record.
+### Use Names = False
+
+With `use_names: false` in the config, the tool will use the private address of the 
+server, expecting that the servers are in a vpc and that you are able to connect
+to them directly (with VPN).
+
+### Use Names = True
+
+If `use_names: true`, then the only requirement of the tool is that the Name tag 
+on the instance maps to the DNS record.
 Generally, `awssh` expects that if the name of the instance is `foo.bar`, then it can
 connect to the server by appending the domain name as `foo.bar.example.com`.
 
 If you unset the domain name in the config, it will not append it. As such, if your Name
-tag maps directly to the DNS name, it will work as well.
+tag maps directly to the FQDN, it will work as well.
 
 In the future, I might add a templated way for handling hostnames, to allow for
 more customization in DNS lookup.
@@ -50,8 +60,10 @@ Search Terms:
     name !~ /term/
 
 Options:
+    -c, --config                     override config file (default: ~/.awssh)
     -V, --version                    print version
-    -i, --init                       initialize config
+    -i, --identity=IDENTITY          set ssh key
+        --init                       initialize config
 
     -l, --list                       just list servers
     -n, --test                       just output ssh command
@@ -61,9 +73,7 @@ Options:
         --no-cache                   disable cache for this run
 
     -m, --[no-]multi                 connect to multiple servers
-    -c, --config                     override config file (default: ~/.awssh)
-    -u, --user                       override user setting
-
+    -u, --user USER                  override user setting
 ```
 ## Examples
 Given a list of servers:
@@ -96,15 +106,20 @@ awssh -m production ^app3 #=> web1.production, web2.production, app1.production,
 ## Config
 ```
 ---
-multi: csshX                   # multi ssh program: csshX or cssh
-single: ssh                    # ssh program, allows for common configs
-region: us-east-1              # ec2 region
-user:                          # username to ssh as
-key: AWS ACCESS KEY ID         # AWS key
-secret: AWS SECRET ACCESS KEY  # AWS secret
-domain: example.com            # append domain to server names
-cache: "~/.awssh.cache"        # cache file location
-expires: 86400                 # cache expiration time (in seconds)
+region: us-east-1               # AWS Region
+key: AWS_ACCESS_KEY_ID          # AWS access key id
+secret: AWS_SECRET_ACCESS_KEY   # AWS secret access key
+multi: csshX                    # command to use when connecting to multiple servers
+single: ssh                     # command to use when connecting to single server
+#user: username                 # set user for connection to all servers
+                                # this can be overridden on the command line
+domain: example.com             # if 'use_names' is set, this will be appended
+                                # to names, leave blank if name is fully-qualified
+use_names: false                # if true, rather than connecting to IP's,
+                                # connection strings will be created using Name
+                                # tag and domain
+cache: ~/.awssh.cache           # the cache file, set to false to disable caching
+expires: 86400                  # cache expiration time in seconds
 ```
 
 ## Multi SSH
@@ -121,7 +136,6 @@ for more advanced usage.
 ## Caching
 
 Maintains a simple cache with expiration (default: 1 day).
-The cache just contains the list of servers' names.
 You can disable the cache by setting the cache value to false in the config file.
 
 ## Shell Alias
