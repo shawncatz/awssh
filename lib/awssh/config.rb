@@ -18,8 +18,18 @@ module Awssh
 
     def initialize(file)
       @file = file
+      @defaults = {
+          multi: 'csshX',
+          single: 'ssh',
+          user: nil,
+          use_names: false,
+          cache: '~/.awssh.cache',
+          cache_type: :sqlite,
+          expires: 1.day
+      }
       raise "config file does not exist: #{file}" unless File.exist?(file)
-      @data = OpenStruct.new(YAML.load_file(file))
+      yaml = {}.merge(@defaults).merge(YAML.load_file(file))
+      @data = OpenStruct.new(yaml)
     end
 
     DEFAULT = <<-EOF
@@ -37,6 +47,7 @@ use_names: false                # if true, rather than connecting to IP's,
                                 # connection strings will be created using Name
                                 # tag and domain
 cache: ~/.awssh.cache           # the cache file, set to false to disable caching
+cache_type: yaml                # the cache type, default yaml
 expires: 86400                  # cache expiration time in seconds
     EOF
   end

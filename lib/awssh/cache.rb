@@ -1,72 +1,68 @@
 require 'ostruct'
 
 module Awssh
-  class Cache
+  module Cache
     class << self
-      def load(file)
-        @instance = new(file)
+      def create(name, config)
+        puts "create: #{name} #{config}"
+        puts config.inspect
+        k = get_class(name.to_s)
+        @instance = k.new(config)
       end
 
       def instance
-        raise 'cache not loaded?' unless @instance.data
+        raise 'cache not loaded?' unless @instance && @instance.data
         @instance
       end
-    end
 
-    attr_reader :data
-
-    def initialize(file, expires)
-      if file
-        @file = File.expand_path(file)
-      else
-        @disabled = true
-        @file = nil
-      end
-      @expires = expires
-      @data = load
-    end
-
-    def write(key, value)
-      time = Time.now.to_i
-      data = {time: time, value: value}
-      @data[key] = data
-      save
-    end
-
-    def read(key)
-      @data[key][:value]
-    end
-
-    def fetch(key, force)
-      if force || @disabled
-        diff = Time.now.to_i
-      else
-        time = @data[key] ? @data[key][:time] : 0
-        diff = Time.now.to_i - time
-      end
-      if diff > @expires
-        value = yield
-        write(key, value)
-        return value
-      else
-        read(key)
+      def get_class(name)
+        "Awssh::Cache::#{name.camelize}".constantize
       end
     end
 
-    private
+    class Base
+      attr_reader :data
 
-    def load
-      return {} if @disabled
-      unless File.exists?(@file)
-        @data = {}
+      def initialize(config)
+
+      end
+
+      def write(key, value)
+        time = Time.now.to_i
+        data = {time: time, value: value}
+        @data[key] = data
         save
       end
-      YAML.load_file(@file)
-    end
 
-    def save
-      return if @disabled
-      File.open(@file, "w+") {|f| f.write(@data.to_yaml)}
+      def read(key)
+        @data[key][:value]
+      end
+
+      def fetch(key, force)
+        if force || @disabled
+          diff = Time.now.to_i
+        else
+          time = @data[key] ? @data[key][:time] : 0
+          diff = Time.now.to_i - time
+        end
+        if diff > @expires
+          value = yield
+          write(key, value)
+          return value
+        else
+          read(key)
+        end
+      end
+
+      protected
+
+      def load
+        raise 'override in subclass'
+      end
+
+      def save
+        raise 'override in subclass'
+      end
     end
   end
 end

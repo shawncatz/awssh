@@ -1,22 +1,12 @@
 module Awssh
   class Search
-    def initialize(servers, terms)
-      @db = db(servers)
+    def initialize(cache, terms)
+      @cache = cache
       @terms = convert(terms)
     end
 
     def filter
-      list = @db
-      @terms.each do |key, value, opts|
-        regex = key == 'name' ? /\sname:[^\s]*#{value}[^\s]*/ : /\s#{key}:#{value}/
-        if opts[:inverse]
-          found = list.grep(regex)
-          list = list - found
-        else
-          list = list.grep(regex)
-        end
-      end
-      list
+      @cache.filter(@terms)
     end
 
     def convert(terms)
@@ -39,10 +29,6 @@ module Awssh
         end
         a << [key, value, opts]
       end
-    end
-
-    def db(servers)
-      servers.inject([]) { |a, s| a << "#{s[:id]}|| #{s[:tags].inject([]) { |a, e| a << e.join(':') }.join(' ')}" }
     end
   end
 end

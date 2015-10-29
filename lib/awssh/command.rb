@@ -10,14 +10,6 @@ module Awssh
           list: false,
           identity: nil,
       }
-      @config = {
-          multi: 'csshX',
-          single: 'ssh',
-          user: nil,
-          use_names: false,
-          cache: '~/.awssh.cache',
-          expires: 1.day
-      }.stringify_keys
 
       @config_file = File.expand_path(@options[:config])
       Awssh::Config.load(@config_file)
@@ -84,7 +76,7 @@ module Awssh
       end.parse!(argv)
 
       @cloud = Awssh::Cloud.connect(@config.key, @config.secret, @config.region)
-      @cache = Awssh::Cache.new(@config.cache, @config.expires||1.day)
+      @cache = Awssh::Cache.create(@config.cache_type, @config)
       @search = argv
 
       if @options[:update]
