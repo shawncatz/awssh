@@ -17,9 +17,9 @@ module Awssh
     attr_reader :data
 
     def initialize(file)
-      @file = file
-      raise "config file does not exist: #{file}" unless File.exist?(file)
-      @data = OpenStruct.new(YAML.load_file(file))
+      @file = File.expand_path(file)
+      yaml = File.exist?(@file) ? YAML.load_file(file) : {}
+      @data = OpenStruct.new(yaml)
     end
 
     DEFAULT = <<-EOF
